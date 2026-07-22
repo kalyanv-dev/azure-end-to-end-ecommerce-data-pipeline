@@ -32,7 +32,7 @@
 					"value": "@concat(\n    dataset().Schema_Name,\n    '/',\n    dataset().Table_name,\n    '/',\n    dataset().Date\n)",
 					"type": "Expression"
 				},
-				"fileSystem": "bronze"
+				"fileSystem": "bronzelayer"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
