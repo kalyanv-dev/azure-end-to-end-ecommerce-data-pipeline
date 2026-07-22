@@ -1,0 +1,10 @@
+{
+	"name": "azurekeyvalue_to_adf_ls",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://ecommercedataKeyVault.vault.azure.net/"
+		}
+	}
+}
