@@ -1,0 +1,23 @@
+{
+	"name": "AzureSQl_To_ADF_LS",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSqlDatabase",
+		"typeProperties": {
+			"server": "azuresqlserverkviswan8.database.windows.net",
+			"database": "ecommerce-data-pipeline-db",
+			"encrypt": "mandatory",
+			"trustServerCertificate": false,
+			"authenticationType": "SQL",
+			"userName": "db_admin",
+			"password": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "azurekeyvalue_to_adf_ls",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "azureSQL-password"
+			}
+		}
+	}
+}
