@@ -1,0 +1,619 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ecommerceDataPipeline-adf"
+		},
+		"adf_to_ecommerceadls_ls_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'adf_to_ecommerceadls_ls'"
+		},
+		"adf_to_ecommerceadls_ls_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ecommercepipelineadls.dfs.core.windows.net/"
+		},
+		"azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://ecommercedataKeyVault.vault.azure.net/"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "localhost"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "ecommerce_db"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "root"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azuresqlserverkviswan8.database.windows.net"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "ecommerce-data-pipeline-db"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "db_admin"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/adf_to_ecommerceadls_ls')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('adf_to_ecommerceadls_ls_properties_typeProperties_url')]",
+					"accountKey": {
+						"type": "SecureString",
+						"value": "[parameters('adf_to_ecommerceadls_ls_accountKey')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/onPremIntegrationRunTIme')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"description": "used to get onprem data to cloud.",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/azurekeyvalue_to_adf_ls')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/onPremMysql_To_ADF_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "MySql",
+				"typeProperties": {
+					"server": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_server')]",
+					"port": 3306,
+					"database": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_database')]",
+					"username": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_username')]",
+					"sslMode": 1,
+					"useSystemTrustStore": 0,
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "azurekeyvalue_to_adf_ls",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "onpremMySQl-password"
+					},
+					"driverVersion": "v2"
+				},
+				"connectVia": {
+					"referenceName": "onPremIntegrationRunTIme",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/onPremIntegrationRunTIme')]",
+				"[concat(variables('factoryId'), '/linkedServices/azurekeyvalue_to_adf_ls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Bronze_Pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "getOnPremTables",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "MySqlSource",
+								"query": {
+									"value": "SELECT \n    table_schema AS Table_Schema,\n    table_name as Table_Name\nFROM information_schema.tables\nwhere table_schema = 'ecommerce_db'",
+									"type": "Expression"
+								}
+							},
+							"dataset": {
+								"referenceName": "onpremMysql_db",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "currentDateTime",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "currentDateTime",
+							"value": {
+								"value": "@utcNow()",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "iterataEachTable",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "currentDateTime",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "getOnPremTables",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('getOnPremTables').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "getLastColumnAndDate",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "AzureSqlSource",
+											"sqlReaderQuery": {
+												"value": "@concat(\n  'select bronze_watermark_column, bronze_last_processed \n   from dbo.watermark_metadata \n   where source_db = ''', item().Table_Schema, ''' \n   and table_name = ''', item().Table_Name, ''''\n)",
+												"type": "Expression"
+											},
+											"queryTimeout": "02:00:00",
+											"partitionOption": "None"
+										},
+										"dataset": {
+											"referenceName": "azure_sql_db",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "FileName",
+									"type": "SetVariable",
+									"dependsOn": [
+										{
+											"activity": "getLastColumnAndDate",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"variableName": "FileName",
+										"value": {
+											"value": "@concat(item().Table_Name,'_',variables('currentDateTime'),'.csv')",
+											"type": "Expression"
+										}
+									}
+								},
+								{
+									"name": "GetTableData",
+									"type": "Lookup",
+									"dependsOn": [
+										{
+											"activity": "FileName",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "MySqlSource",
+											"query": {
+												"value": "@concat(\n  'SELECT * FROM ',\n  item().table_name,\n  ' WHERE ',\n  activity('getLastColumnAndDate').output.firstRow.bronze_watermark_column,\n  ' > ''',\n  activity('getLastColumnAndDate').output.firstRow.bronze_last_processed,\n  ''''\n)",
+												"type": "Expression"
+											}
+										},
+										"dataset": {
+											"referenceName": "onpremMysql_db",
+											"type": "DatasetReference",
+											"parameters": {}
+										},
+										"firstRowOnly": false
+									}
+								},
+								{
+									"name": "CheckIfRowsArePresentOrNot",
+									"type": "IfCondition",
+									"dependsOn": [
+										{
+											"activity": "GetTableData",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"userProperties": [],
+									"typeProperties": {
+										"expression": {
+											"value": "@greater(length(activity('GetTableData').output.value), 0)",
+											"type": "Expression"
+										},
+										"ifTrueActivities": [
+											{
+												"name": "copyOnPremToAdls",
+												"type": "Copy",
+												"dependsOn": [
+													{
+														"activity": "getMaxDate",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "MySqlSource",
+														"additionalColumns": [
+															{
+																"name": "ingestion_date",
+																"value": {
+																	"value": "@utcNow()",
+																	"type": "Expression"
+																}
+															}
+														],
+														"query": {
+															"value": "@concat(\n  'SELECT * FROM ',\n  item().table_name,\n  ' WHERE ',\n  activity('getLastColumnAndDate').output.firstRow.bronze_watermark_column,\n  ' > ''',\n  activity('getLastColumnAndDate').output.firstRow.bronze_last_processed,\n  ''''\n)",
+															"type": "Expression"
+														}
+													},
+													"sink": {
+														"type": "DelimitedTextSink",
+														"storeSettings": {
+															"type": "AzureBlobFSWriteSettings"
+														},
+														"formatSettings": {
+															"type": "DelimitedTextWriteSettings",
+															"quoteAllText": true,
+															"fileExtension": ".txt"
+														}
+													},
+													"enableStaging": false,
+													"translator": {
+														"type": "TabularTranslator",
+														"typeConversion": true,
+														"typeConversionSettings": {
+															"allowDataTruncation": true,
+															"treatBooleanAsNumber": false
+														}
+													}
+												},
+												"inputs": [
+													{
+														"referenceName": "onpremMysql_db",
+														"type": "DatasetReference",
+														"parameters": {}
+													}
+												],
+												"outputs": [
+													{
+														"referenceName": "adlsCSV_sink_db",
+														"type": "DatasetReference",
+														"parameters": {
+															"File_name": {
+																"value": "@variables('FileName')",
+																"type": "Expression"
+															},
+															"Schema_Name": {
+																"value": "@item().Table_Schema",
+																"type": "Expression"
+															},
+															"Table_name": {
+																"value": "@item().Table_Name",
+																"type": "Expression"
+															},
+															"Date": {
+																"value": "@formatDateTime(variables('currentDateTime'),'yyyy-MM-dd')",
+																"type": "Expression"
+															}
+														}
+													}
+												]
+											},
+											{
+												"name": "getMaxDate",
+												"type": "Lookup",
+												"dependsOn": [],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"typeProperties": {
+													"source": {
+														"type": "MySqlSource",
+														"query": {
+															"value": "@concat(\r\n  'SELECT MAX(',\r\n  activity('getLastColumnAndDate').output.firstRow.bronze_watermark_column,\r\n  ') AS max_date FROM ',\r\n  item().table_name\r\n)",
+															"type": "Expression"
+														}
+													},
+													"dataset": {
+														"referenceName": "onpremMysql_db",
+														"type": "DatasetReference",
+														"parameters": {}
+													}
+												}
+											},
+											{
+												"name": "UpdateWaterMarkTable",
+												"type": "Script",
+												"dependsOn": [
+													{
+														"activity": "copyOnPremToAdls",
+														"dependencyConditions": [
+															"Succeeded"
+														]
+													}
+												],
+												"policy": {
+													"timeout": "0.12:00:00",
+													"retry": 0,
+													"retryIntervalInSeconds": 30,
+													"secureOutput": false,
+													"secureInput": false
+												},
+												"userProperties": [],
+												"linkedServiceName": {
+													"referenceName": "AzureSQl_To_ADF_LS",
+													"type": "LinkedServiceReference"
+												},
+												"typeProperties": {
+													"scripts": [
+														{
+															"type": "Query",
+															"text": {
+																"value": "@concat(\n  'UPDATE watermark_metadata SET bronze_last_processed = ''',\n  activity('getMaxDate').output.firstRow.max_date,\n  ''' WHERE source_db = ''',\n  item().table_schema,\n  ''' AND table_name = ''',\n  item().table_name,\n  ''''\n)",
+																"type": "Expression"
+															}
+														}
+													],
+													"scriptBlockExecutionTimeout": "02:00:00"
+												}
+											}
+										]
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"variables": {
+					"currentDateTime": {
+						"type": "String"
+					},
+					"FileName": {
+						"type": "String"
+					}
+				},
+				"folder": {
+					"name": "Ecommerce_Pipeline"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/onpremMysql_db')]",
+				"[concat(variables('factoryId'), '/datasets/azure_sql_db')]",
+				"[concat(variables('factoryId'), '/datasets/adlsCSV_sink_db')]",
+				"[concat(variables('factoryId'), '/linkedServices/AzureSQl_To_ADF_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/onpremMysql_db')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "onPremMysql_To_ADF_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "MySqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/onPremMysql_To_ADF_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSQl_To_ADF_LS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "azurekeyvalue_to_adf_ls",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "azureSQL-password"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/azurekeyvalue_to_adf_ls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/azure_sql_db')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureSQl_To_ADF_LS",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureSQl_To_ADF_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/adlsCSV_sink_db')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "adf_to_ecommerceadls_ls",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"File_name": {
+						"type": "string"
+					},
+					"Schema_Name": {
+						"type": "string"
+					},
+					"Table_name": {
+						"type": "string"
+					},
+					"Date": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().File_name",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat(\n    dataset().Schema_Name,\n    '/',\n    dataset().Table_name,\n    '/',\n    dataset().Date\n)",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/adf_to_ecommerceadls_ls')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Main')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Ecommerce_Pipeline"
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		}
+	]
+}

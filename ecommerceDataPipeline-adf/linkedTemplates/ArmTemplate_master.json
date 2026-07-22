@@ -1,0 +1,105 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "ecommerceDataPipeline-adf"
+		},
+		"adf_to_ecommerceadls_ls_accountKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accountKey' of 'adf_to_ecommerceadls_ls'"
+		},
+		"adf_to_ecommerceadls_ls_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ecommercepipelineadls.dfs.core.windows.net/"
+		},
+		"azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://ecommercedataKeyVault.vault.azure.net/"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "localhost"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "ecommerce_db"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
+			"type": "string",
+			"defaultValue": "root"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azuresqlserverkviswan8.database.windows.net"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "ecommerce-data-pipeline-db"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "db_admin"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "ecommerceDataPipeline-adf_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"adf_to_ecommerceadls_ls_accountKey": {
+						"value": "[parameters('adf_to_ecommerceadls_ls_accountKey')]"
+					},
+					"adf_to_ecommerceadls_ls_properties_typeProperties_url": {
+						"value": "[parameters('adf_to_ecommerceadls_ls_properties_typeProperties_url')]"
+					},
+					"azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl": {
+						"value": "[parameters('azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl')]"
+					},
+					"onPremMysql_To_ADF_LS_properties_typeProperties_server": {
+						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_server')]"
+					},
+					"onPremMysql_To_ADF_LS_properties_typeProperties_database": {
+						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_database')]"
+					},
+					"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
+						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_username')]"
+					},
+					"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
+						"value": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_server')]"
+					},
+					"AzureSQl_To_ADF_LS_properties_typeProperties_database": {
+						"value": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_database')]"
+					},
+					"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
+						"value": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_userName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

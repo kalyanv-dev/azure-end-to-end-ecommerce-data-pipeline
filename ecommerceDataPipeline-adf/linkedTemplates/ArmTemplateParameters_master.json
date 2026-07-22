@@ -1,0 +1,42 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "ecommerceDataPipeline-adf"
+		},
+		"adf_to_ecommerceadls_ls_accountKey": {
+			"value": ""
+		},
+		"adf_to_ecommerceadls_ls_properties_typeProperties_url": {
+			"value": "https://ecommercepipelineadls.dfs.core.windows.net/"
+		},
+		"azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl": {
+			"value": "https://ecommercedataKeyVault.vault.azure.net/"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_server": {
+			"value": "localhost"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_database": {
+			"value": "ecommerce_db"
+		},
+		"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
+			"value": "root"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
+			"value": "azuresqlserverkviswan8.database.windows.net"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_database": {
+			"value": "ecommerce-data-pipeline-db"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
+			"value": "db_admin"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}
