@@ -1,0 +1,7 @@
+{
+	"name": "onPremIntegrationRunTIme",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "used to get onprem data to cloud."
+	}
+}
