@@ -1,0 +1,81 @@
+# =========================
+# ENV & SECRETS
+# =========================
+.env
+.env.*
+*.env
+
+# =========================
+# PYTHON
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# =========================
+# DATABRICKS
+# =========================
+*.dbc
+.databricks/
+
+# =========================
+# NODE (if used)
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS FILES
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / EDITOR
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# BUILD / TEMP FILES
+# =========================
+dist/
+build/
+tmp/
+temp/
+
+# =========================
+# AZURE / LOGS
+# =========================
+*.log
+*.out
+
+# =========================
+# SPARK / BIG DATA
+# =========================
+.metastore_db/
+.sparkStaging/
+
+# =========================
+# TEST / COVERAGE
+# =========================
+.coverage
+htmlcov/
+
+# =========================
+# SQL BACKUPS
+# =========================
+*.bak
+*.backup
