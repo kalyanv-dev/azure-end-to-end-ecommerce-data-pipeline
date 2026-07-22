@@ -1,0 +1,12 @@
+{
+	"name": "onpremMysql_db",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "onPremMysql_To_ADF_LS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "MySqlTable",
+		"schema": []
+	}
+}

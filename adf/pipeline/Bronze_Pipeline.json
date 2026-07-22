@@ -1,0 +1,348 @@
+{
+	"name": "Bronze_Pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "getOnPremTables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "MySqlSource",
+						"query": {
+							"value": "SELECT \n    table_schema AS Table_Schema,\n    table_name as Table_Name\nFROM information_schema.tables\nwhere table_schema = 'ecommerce_db'",
+							"type": "Expression"
+						}
+					},
+					"dataset": {
+						"referenceName": "onpremMysql_db",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "currentDateTime",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "currentDateTime",
+					"value": {
+						"value": "@utcNow()",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "iterataEachTable",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "currentDateTime",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "getOnPremTables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('getOnPremTables').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "getLastColumnAndDate",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "AzureSqlSource",
+									"sqlReaderQuery": {
+										"value": "@concat(\n  'select bronze_watermark_column, bronze_last_processed \n   from dbo.watermark_metadata \n   where source_db = ''', item().Table_Schema, ''' \n   and table_name = ''', item().Table_Name, ''''\n)",
+										"type": "Expression"
+									},
+									"queryTimeout": "02:00:00",
+									"partitionOption": "None"
+								},
+								"dataset": {
+									"referenceName": "azure_sql_db",
+									"type": "DatasetReference"
+								}
+							}
+						},
+						{
+							"name": "FileName",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "getLastColumnAndDate",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "FileName",
+								"value": {
+									"value": "@concat(item().Table_Name,'_',variables('currentDateTime'),'.csv')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "GetTableData",
+							"type": "Lookup",
+							"dependsOn": [
+								{
+									"activity": "FileName",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "MySqlSource",
+									"query": {
+										"value": "@concat(\n  'SELECT * FROM ',\n  item().table_name,\n  ' WHERE ',\n  activity('getLastColumnAndDate').output.firstRow.bronze_watermark_column,\n  ' > ''',\n  activity('getLastColumnAndDate').output.firstRow.bronze_last_processed,\n  ''''\n)",
+										"type": "Expression"
+									}
+								},
+								"dataset": {
+									"referenceName": "onpremMysql_db",
+									"type": "DatasetReference"
+								},
+								"firstRowOnly": false
+							}
+						},
+						{
+							"name": "CheckIfRowsArePresentOrNot",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "GetTableData",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@greater(length(activity('GetTableData').output.value), 0)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "copyOnPremToAdls",
+										"type": "Copy",
+										"dependsOn": [
+											{
+												"activity": "getMaxDate",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "MySqlSource",
+												"additionalColumns": [
+													{
+														"name": "ingestion_date",
+														"value": {
+															"value": "@utcNow()",
+															"type": "Expression"
+														}
+													}
+												],
+												"query": {
+													"value": "@concat(\n  'SELECT * FROM ',\n  item().table_name,\n  ' WHERE ',\n  activity('getLastColumnAndDate').output.firstRow.bronze_watermark_column,\n  ' > ''',\n  activity('getLastColumnAndDate').output.firstRow.bronze_last_processed,\n  ''''\n)",
+													"type": "Expression"
+												}
+											},
+											"sink": {
+												"type": "DelimitedTextSink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												},
+												"formatSettings": {
+													"type": "DelimitedTextWriteSettings",
+													"quoteAllText": true,
+													"fileExtension": ".txt"
+												}
+											},
+											"enableStaging": false,
+											"translator": {
+												"type": "TabularTranslator",
+												"typeConversion": true,
+												"typeConversionSettings": {
+													"allowDataTruncation": true,
+													"treatBooleanAsNumber": false
+												}
+											}
+										},
+										"inputs": [
+											{
+												"referenceName": "onpremMysql_db",
+												"type": "DatasetReference"
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "adlsCSV_sink_db",
+												"type": "DatasetReference",
+												"parameters": {
+													"File_name": {
+														"value": "@variables('FileName')",
+														"type": "Expression"
+													},
+													"Schema_Name": {
+														"value": "@item().Table_Schema",
+														"type": "Expression"
+													},
+													"Table_name": {
+														"value": "@item().Table_Name",
+														"type": "Expression"
+													},
+													"Date": {
+														"value": "@formatDateTime(variables('currentDateTime'),'yyyy-MM-dd')",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									},
+									{
+										"name": "getMaxDate",
+										"type": "Lookup",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "MySqlSource",
+												"query": {
+													"value": "@concat(\r\n  'SELECT MAX(',\r\n  activity('getLastColumnAndDate').output.firstRow.bronze_watermark_column,\r\n  ') AS max_date FROM ',\r\n  item().table_name\r\n)",
+													"type": "Expression"
+												}
+											},
+											"dataset": {
+												"referenceName": "onpremMysql_db",
+												"type": "DatasetReference"
+											}
+										}
+									},
+									{
+										"name": "UpdateWaterMarkTable",
+										"type": "Script",
+										"dependsOn": [
+											{
+												"activity": "copyOnPremToAdls",
+												"dependencyConditions": [
+													"Succeeded"
+												]
+											}
+										],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"linkedServiceName": {
+											"referenceName": "AzureSQl_To_ADF_LS",
+											"type": "LinkedServiceReference"
+										},
+										"typeProperties": {
+											"scripts": [
+												{
+													"type": "Query",
+													"text": {
+														"value": "@concat(\n  'UPDATE watermark_metadata SET bronze_last_processed = ''',\n  activity('getMaxDate').output.firstRow.max_date,\n  ''' WHERE source_db = ''',\n  item().table_schema,\n  ''' AND table_name = ''',\n  item().table_name,\n  ''''\n)",
+														"type": "Expression"
+													}
+												}
+											],
+											"scriptBlockExecutionTimeout": "02:00:00"
+										}
+									}
+								]
+							}
+						}
+					]
+				}
+			}
+		],
+		"variables": {
+			"currentDateTime": {
+				"type": "String"
+			},
+			"FileName": {
+				"type": "String"
+			}
+		},
+		"folder": {
+			"name": "Ecommerce_Pipeline"
+		},
+		"annotations": []
+	}
+}
