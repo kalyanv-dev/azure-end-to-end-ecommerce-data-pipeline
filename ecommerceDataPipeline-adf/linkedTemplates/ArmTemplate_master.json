@@ -11,6 +11,18 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'adf_to_ecommerceadls_ls'"
 		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "azuresqlserverkviswan8.database.windows.net"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "ecommerce-data-pipeline-db"
+		},
+		"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "db_admin"
+		},
 		"adf_to_ecommerceadls_ls_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://ecommercepipelineadls.dfs.core.windows.net/"
@@ -30,18 +42,6 @@
 		"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
 			"type": "string",
 			"defaultValue": "root"
-		},
-		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
-			"type": "string",
-			"defaultValue": "azuresqlserverkviswan8.database.windows.net"
-		},
-		"AzureSQl_To_ADF_LS_properties_typeProperties_database": {
-			"type": "string",
-			"defaultValue": "ecommerce-data-pipeline-db"
-		},
-		"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
-			"type": "string",
-			"defaultValue": "db_admin"
 		},
 		"containerUri": {
 			"type": "string",
@@ -79,15 +79,6 @@
 					"azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl": {
 						"value": "[parameters('azurekeyvalue_to_adf_ls_properties_typeProperties_baseUrl')]"
 					},
-					"onPremMysql_To_ADF_LS_properties_typeProperties_server": {
-						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_server')]"
-					},
-					"onPremMysql_To_ADF_LS_properties_typeProperties_database": {
-						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_database')]"
-					},
-					"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
-						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_username')]"
-					},
 					"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
 						"value": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_server')]"
 					},
@@ -96,6 +87,15 @@
 					},
 					"AzureSQl_To_ADF_LS_properties_typeProperties_userName": {
 						"value": "[parameters('AzureSQl_To_ADF_LS_properties_typeProperties_userName')]"
+					},
+					"onPremMysql_To_ADF_LS_properties_typeProperties_server": {
+						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_server')]"
+					},
+					"onPremMysql_To_ADF_LS_properties_typeProperties_database": {
+						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_database')]"
+					},
+					"onPremMysql_To_ADF_LS_properties_typeProperties_username": {
+						"value": "[parameters('onPremMysql_To_ADF_LS_properties_typeProperties_username')]"
 					}
 				}
 			},
