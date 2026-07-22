@@ -1,0 +1,27 @@
+{
+	"name": "Main_Pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Execute Bronze_Layer",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Bronze_Pipeline",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			}
+		],
+		"folder": {
+			"name": "Ecommerce_Pipeline"
+		},
+		"annotations": []
+	}
+}
