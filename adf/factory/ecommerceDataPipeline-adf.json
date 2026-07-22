@@ -1,0 +1,15 @@
+{
+	"name": "ecommerceDataPipeline-adf",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "b9b2425b-0494-4d6a-b510-1206365311ea",
+		"tenantId": "dbf6750f-1762-4a4f-a515-f3629023a874"
+	}
+}
