@@ -51,9 +51,9 @@ On-Prem MySQL → SHIR → ADF → ADLS (Bronze) → Databricks (Silver & Gold) 
 │ └── metadata_silver_config.sql # Transformation rules config
 │
 ├── data/
-│ ├── bronze/ # Raw data (partitioned by date)
-│ ├── silver/ # Cleaned & transformed data
-│ └── gold/ # Analytics-ready tables
+│ ├── bronzelayer/ # Raw data (partitioned by date)
+│ ├── silverlayer/ # Cleaned & transformed data
+│ └── goldlayer/ # Analytics-ready tables
 │
 ├── architecture/
 │ └── architecture.png # Architecture diagram
