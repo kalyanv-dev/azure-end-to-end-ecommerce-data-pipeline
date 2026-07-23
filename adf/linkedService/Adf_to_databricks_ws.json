@@ -1,0 +1,18 @@
+{
+	"name": "Adf_to_databricks_ws",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-7405615657881183.3.azuredatabricks.net",
+			"accessToken": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "azurekeyvalue_to_adf_ls",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": "databricks-accessToken"
+			}
+		}
+	}
+}
