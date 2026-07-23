@@ -464,14 +464,25 @@
 						}
 					},
 					{
-						"name": "Execute Pipeline1",
+						"name": "Execute GoldPipeline",
 						"type": "ExecutePipeline",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "Execute Silver_Layer",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"policy": {
 							"secureInput": false
 						},
 						"userProperties": [],
 						"typeProperties": {
+							"pipeline": {
+								"referenceName": "gold_layer",
+								"type": "PipelineReference"
+							},
 							"waitOnCompletion": true,
 							"parameters": {}
 						}
@@ -487,7 +498,8 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/Bronze_Pipeline')]",
-				"[concat(variables('factoryId'), '/pipelines/silver_pipeline')]"
+				"[concat(variables('factoryId'), '/pipelines/silver_pipeline')]",
+				"[concat(variables('factoryId'), '/pipelines/gold_layer')]"
 			]
 		},
 		{
