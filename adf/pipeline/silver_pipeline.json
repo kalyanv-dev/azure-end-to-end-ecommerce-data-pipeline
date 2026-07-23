@@ -1,0 +1,31 @@
+{
+	"name": "silver_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "silver_notebook",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/kalyanv.learningprofile@gmail.com/azure-end-to-end-ecommerce-data-pipeline/databricks/silver_notebook"
+				},
+				"linkedServiceName": {
+					"referenceName": "Adf_to_databricks_ws",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"folder": {
+			"name": "Ecommerce_Pipeline"
+		},
+		"annotations": []
+	}
+}
