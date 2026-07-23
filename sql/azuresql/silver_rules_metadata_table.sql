@@ -23,7 +23,7 @@ INSERT INTO metadata_silver_config (
 )
 VALUES (
     'customers',
-    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/ecommerce_db/customers/',
+    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/customers/',
     'silver.ecommerce_customers',
     'csv',
     'customer_id',
@@ -51,7 +51,7 @@ INSERT INTO metadata_silver_config (
 )
 VALUES (
     'products',
-    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/ecommerce_db/products/',
+    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/products/',
     'silver.ecommerce_products',
     'csv',
     'product_id',
@@ -73,7 +73,7 @@ INSERT INTO metadata_silver_config (
 )
 VALUES (
     'orders',
-    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/ecommerce_db/orders/',
+    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/orders/',
     'silver.ecommerce_orders',
     'csv',
     'order_id',
@@ -95,7 +95,7 @@ INSERT INTO metadata_silver_config (
 )
 VALUES (
     'order_items',
-    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/ecommerce_db/order_items/',
+    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/order_items/',
     'silver.ecommerce_order_items',
     'csv',
     'order_item_id',
@@ -114,7 +114,7 @@ INSERT INTO metadata_silver_config (
 )
 VALUES (
     'payments',
-    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/ecommerce_db/payments/',
+    '/Volumes/ecommerce_data_pipline_databricks_ws/bronze/bronze_vol/payments/',
     'silver.ecommerce_payments',
     'csv',
     'payment_id',
