@@ -184,7 +184,3 @@ Instead of hardcoding logic:
 [https://github.com//ecommerce-onprem-pipeline](https://github.com/kalyanv-dev/azure-end-to-end-ecommerce-data-pipeline)
 
 ---
-
-## 🙌 Acknowledgements
-
-This project was built as a hands-on learning experience to understand real-world data engineering workflows.
