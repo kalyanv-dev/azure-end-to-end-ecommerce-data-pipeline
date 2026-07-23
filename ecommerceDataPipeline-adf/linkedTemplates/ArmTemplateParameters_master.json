@@ -8,6 +8,9 @@
 		"adf_to_ecommerceadls_ls_accountKey": {
 			"value": ""
 		},
+		"Adf_to_databricks_ws_properties_typeProperties_existingClusterId": {
+			"value": "0723-052300-5vus8hwi"
+		},
 		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
 			"value": "azuresqlserverkviswan8.database.windows.net"
 		},

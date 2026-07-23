@@ -11,6 +11,10 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'accountKey' of 'adf_to_ecommerceadls_ls'"
 		},
+		"Adf_to_databricks_ws_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0723-052300-5vus8hwi"
+		},
 		"AzureSQl_To_ADF_LS_properties_typeProperties_server": {
 			"type": "string",
 			"defaultValue": "azuresqlserverkviswan8.database.windows.net"
@@ -434,6 +438,30 @@
 							"waitOnCompletion": true,
 							"parameters": {}
 						}
+					},
+					{
+						"name": "Execute Silver_Layer",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "Execute Bronze_Layer",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "silver_pipeline",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
 					}
 				],
 				"policy": {
@@ -445,7 +473,172 @@
 				"annotations": []
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/Bronze_Pipeline')]"
+				"[concat(variables('factoryId'), '/pipelines/Bronze_Pipeline')]",
+				"[concat(variables('factoryId'), '/pipelines/silver_pipeline')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/silver_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "silver_notebook",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/kalyanv.learningprofile@gmail.com/azure-end-to-end-ecommerce-data-pipeline/databricks/silver_notebook"
+						},
+						"linkedServiceName": {
+							"referenceName": "Adf_to_databricks_ws",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "getTableName",
+						"type": "Lookup",
+						"dependsOn": [
+							{
+								"activity": "silver_notebook",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "AzureSqlSource",
+								"sqlReaderQuery": {
+									"value": "select table_name,silver_watermark_column from watermark_metadata",
+									"type": "Expression"
+								},
+								"queryTimeout": "02:00:00",
+								"partitionOption": "None"
+							},
+							"dataset": {
+								"referenceName": "azure_sql_db",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "iterateEachTable",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "getTableName",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('getTableName').output.value",
+								"type": "Expression"
+							},
+							"isSequential": true,
+							"activities": [
+								{
+									"name": "getMaxDate",
+									"type": "Lookup",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "MySqlSource",
+											"query": {
+												"value": "@concat(\n  'SELECT MAX(',\n  item().silver_watermark_column,\n  ') AS max_date FROM ',\n  item().table_name\n)",
+												"type": "Expression"
+											}
+										},
+										"dataset": {
+											"referenceName": "onpremMysql_db",
+											"type": "DatasetReference",
+											"parameters": {}
+										}
+									}
+								},
+								{
+									"name": "UpdateWaterMarkTable",
+									"type": "Script",
+									"dependsOn": [
+										{
+											"activity": "getMaxDate",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"linkedServiceName": {
+										"referenceName": "AzureSQl_To_ADF_LS",
+										"type": "LinkedServiceReference"
+									},
+									"typeProperties": {
+										"scripts": [
+											{
+												"type": "Query",
+												"text": {
+													"value": "@concat(\n  'UPDATE watermark_metadata SET silver_last_processed = ''',\n  activity('getMaxDate').output.firstRow.max_date,\n  ''' WHERE source_db = ''',\n  item().table_schema,\n  ''' AND table_name = ''',\n  item().table_name,\n  ''''\n)",
+													"type": "Expression"
+												}
+											}
+										],
+										"scriptBlockExecutionTimeout": "02:00:00"
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Ecommerce_Pipeline"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Adf_to_databricks_ws')]",
+				"[concat(variables('factoryId'), '/datasets/azure_sql_db')]",
+				"[concat(variables('factoryId'), '/datasets/onpremMysql_db')]",
+				"[concat(variables('factoryId'), '/linkedServices/AzureSQl_To_ADF_LS')]"
 			]
 		},
 		{
@@ -531,6 +724,30 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/onPremMysql_To_ADF_LS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Adf_to_databricks_ws')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405615657881183.3.azuredatabricks.net",
+					"accessToken": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "azurekeyvalue_to_adf_ls",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "databricks-accessToken"
+					},
+					"existingClusterId": "[parameters('Adf_to_databricks_ws_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/azurekeyvalue_to_adf_ls')]"
 			]
 		},
 		{
