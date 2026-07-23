@@ -765,7 +765,7 @@
 											{
 												"type": "Query",
 												"text": {
-													"value": "@concat(\n  'UPDATE watermark_metadata SET silver_last_processed = ''',\n  activity('getMaxDate').output.firstRow.max_date,\n  ''' WHERE source_db = ''',\n  item().table_schema,\n  ''' AND table_name = ''',\n  item().table_name,\n  ''''\n)",
+													"value": "@concat(\n  'UPDATE watermark_metadata SET silver_last_processed = ''',\n  activity('getMaxDate').output.firstRow.max_date,\n  ''' WHERE table_name = ''',\n  item().table_name,\n  ''''\n)",
 													"type": "Expression"
 												}
 											}
